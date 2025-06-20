@@ -211,69 +211,147 @@ class EDA:
         df = pd.read_csv(uploaded, parse_dates=['datetime'])
 
         tabs = st.tabs([
-            "1. 목적 & 절차",
-            "2. 데이터셋 설명",
-            "3. 데이터 로드 & 품질 체크",
-            "4. Datetime 특성 추출",
-            "5. 시각화",
-            "6. 상관관계 분석",
-            "7. 이상치 제거",
-            "8. 로그 변환"
+            "1. 기초 통계",
+            "2. 연도별 추이",
+            "3. 지역별 분석",
+            "4. 변화량 분석",
+            "5. 시각화"
         ])
 
-        # 1. 목적 & 분석 절차
+        # 1. 기초 통계
         with tabs[0]:
-            st.header("🔭 목적 & 분석 절차")
-            st.markdown("""
-            **목적**: Bike Sharing Demand 데이터셋을 탐색하고,
-            다양한 특성이 대여량(count)에 미치는 영향을 파악합니다.
+            # st.header("🔭 목적 & 분석 절차")
+            # st.markdown("""
+            # **목적**: Bike Sharing Demand 데이터셋을 탐색하고,
+            # 다양한 특성이 대여량(count)에 미치는 영향을 파악합니다.
+            #
+            # **절차**:
+            # 1. 데이터 구조 및 기초 통계 확인
+            # 2. 결측치/중복치 등 품질 체크
+            # 3. datetime 특성(연도, 월, 일, 시, 요일) 추출
+            # 4. 주요 변수 시각화
+            # 5. 변수 간 상관관계 분석
+            # 6. 이상치 탐지 및 제거
+            # 7. 로그 변환을 통한 분포 안정화
+            # """)
+            st.title("📊 인구 통계 데이터 전처리 및 분석")
 
-            **절차**:
-            1. 데이터 구조 및 기초 통계 확인  
-            2. 결측치/중복치 등 품질 체크  
-            3. datetime 특성(연도, 월, 일, 시, 요일) 추출  
-            4. 주요 변수 시각화  
-            5. 변수 간 상관관계 분석  
-            6. 이상치 탐지 및 제거  
-            7. 로그 변환을 통한 분포 안정화
-            """)
+            uploaded_file = st.file_uploader("CSV 파일을 업로드하세요", type=["csv"])
+
+            if uploaded_file is not None:
+                # 파일 읽기
+                df = pd.read_csv(uploaded_file)
+
+                st.subheader("✅ 원본 데이터 미리보기")
+                st.dataframe(df.head())
+
+                # '세종' 지역 필터링
+                sejong_df = df[df['행정구역'].str.contains('세종', na=False)].copy()
+
+                # '-'를 0으로 바꾸기
+                sejong_df.replace('-', 0, inplace=True)
+
+                # 숫자로 변환할 열
+                numeric_cols = ['인구', '출생아수(명)', '사망자수(명)']
+
+                for col in numeric_cols:
+                    if col in sejong_df.columns:
+                        sejong_df[col] = pd.to_numeric(sejong_df[col], errors='coerce').fillna(0)
+
+                st.subheader("🧹 전처리된 '세종' 데이터")
+                st.dataframe(sejong_df)
+
+                st.subheader("📌 데이터 요약 통계 (`describe()`)")
+                st.write(sejong_df[numeric_cols].describe())
+
+                st.subheader("📌 데이터프레임 구조 (`info()`)")
+                # df.info()는 콘솔 출력만 가능하므로 문자열로 캡처
+                buffer = io.StringIO()
+                sejong_df.info(buf=buffer)
+                info_str = buffer.getvalue()
+                st.text(info_str)
 
         # 2. 데이터셋 설명
         with tabs[1]:
-            st.header("🔍 데이터셋 설명")
-            st.markdown(f"""
-            - **train.csv**: 2011–2012년까지의 시간대별 대여 기록  
-            - 총 관측치: {df.shape[0]}개  
-            - 주요 변수:
-              - **datetime**: 날짜와 시간 (YYYY-MM-DD HH:MM:SS)  
-              - **season**: 계절 (1: 봄, 2: 여름, 3: 가을, 4: 겨울)  
-              - **holiday**: 공휴일 여부 (0: 평일, 1: 공휴일)  
-              - **workingday**: 근무일 여부 (0: 주말/공휴일, 1: 근무일)  
-              - **weather**: 날씨 상태  
-                - 1: 맑음·부분적으로 흐림  
-                - 2: 안개·흐림  
-                - 3: 가벼운 비/눈  
-                - 4: 폭우/폭설 등  
-              - **temp**: 실제 기온 (섭씨)  
-              - **atemp**: 체감 온도 (섭씨)  
-              - **humidity**: 상대 습도 (%)  
-              - **windspeed**: 풍속 (정규화된 값)  
-              - **casual**: 비등록 사용자 대여 횟수  
-              - **registered**: 등록 사용자 대여 횟수  
-              - **count**: 전체 대여 횟수 (casual + registered)
-            """)
+            # st.header("🔍 데이터셋 설명")
+            # st.markdown(f"""
+            # - **train.csv**: 2011–2012년까지의 시간대별 대여 기록
+            # - 총 관측치: {df.shape[0]}개
+            # - 주요 변수:
+            #   - **datetime**: 날짜와 시간 (YYYY-MM-DD HH:MM:SS)
+            #   - **season**: 계절 (1: 봄, 2: 여름, 3: 가을, 4: 겨울)
+            #   - **holiday**: 공휴일 여부 (0: 평일, 1: 공휴일)
+            #   - **workingday**: 근무일 여부 (0: 주말/공휴일, 1: 근무일)
+            #   - **weather**: 날씨 상태
+            #     - 1: 맑음·부분적으로 흐림
+            #     - 2: 안개·흐림
+            #     - 3: 가벼운 비/눈
+            #     - 4: 폭우/폭설 등
+            #   - **temp**: 실제 기온 (섭씨)
+            #   - **atemp**: 체감 온도 (섭씨)
+            #   - **humidity**: 상대 습도 (%)
+            #   - **windspeed**: 풍속 (정규화된 값)
+            #   - **casual**: 비등록 사용자 대여 횟수
+            #   - **registered**: 등록 사용자 대여 횟수
+            #   - **count**: 전체 대여 횟수 (casual + registered)
+            # """)
+            #
+            # st.subheader("1) 데이터 구조 (`df.info()`)")
+            # buffer = io.StringIO()
+            # df.info(buf=buffer)
+            # st.text(buffer.getvalue())
+            #
+            # st.subheader("2) 기초 통계량 (`df.describe()`)")
+            # numeric_df = df.select_dtypes(include=[np.number])
+            # st.dataframe(numeric_df.describe())
+            #
+            # st.subheader("3) 샘플 데이터 (첫 5행)")
+            # st.dataframe(df.head())
+            st.title("📈 National Population Trend and 2035 Projection")
 
-            st.subheader("1) 데이터 구조 (`df.info()`)")
-            buffer = io.StringIO()
-            df.info(buf=buffer)
-            st.text(buffer.getvalue())
+            uploaded_file = st.file_uploader("Upload population_trends.csv", type=["csv"])
 
-            st.subheader("2) 기초 통계량 (`df.describe()`)")
-            numeric_df = df.select_dtypes(include=[np.number])
-            st.dataframe(numeric_df.describe())
+            if uploaded_file is not None:
+                df = pd.read_csv(uploaded_file)
 
-            st.subheader("3) 샘플 데이터 (첫 5행)")
-            st.dataframe(df.head())
+                # '-' 처리 및 숫자 변환
+                df.replace('-', 0, inplace=True)
+                for col in ['인구', '출생아수(명)', '사망자수(명)']:
+                    if col in df.columns:
+                        df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+
+                # 전국 데이터 필터링
+                nat_df = df[df['지역'] == '전국'].copy()
+
+                # 연도별 인구 추이 그래프
+                fig, ax = plt.subplots(figsize=(10, 6))
+                ax.plot(nat_df['연도'], nat_df['인구'], marker='o', label='Population')
+
+                # 최근 3년 평균 출생아수, 사망자수 계산
+                recent = nat_df.sort_values('연도', ascending=False).head(3)
+                avg_birth = recent['출생아수(명)'].mean()
+                avg_death = recent['사망자수(명)'].mean()
+                net_growth = avg_birth - avg_death
+
+                # 예측: 2035년 = 마지막 연도 기준 + (net_growth * 연도 수)
+                last_year = nat_df['연도'].max()
+                last_pop = nat_df[nat_df['연도'] == last_year]['인구'].values[0]
+                years_to_project = 2035 - last_year
+                predicted_pop = last_pop + net_growth * years_to_project
+
+                # 2035년 예측값 그래프에 추가
+                ax.scatter(2035, predicted_pop, color='red', label='2035 Projection')
+                ax.annotate(f'{int(predicted_pop):,}', (2035, predicted_pop), textcoords="offset points",
+                            xytext=(0, 10), ha='center', color='red')
+
+                # 그래프 스타일
+                ax.set_title('Population Trend (National)')
+                ax.set_xlabel('Year')
+                ax.set_ylabel('Population')
+                ax.legend()
+                ax.grid(True)
+
+                st.pyplot(fig)
 
         # 3. 데이터 로드 & 품질 체크
         with tabs[2]:
